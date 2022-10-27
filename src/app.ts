@@ -1,5 +1,4 @@
-import { PerspectiveCamera, Scene, Vector3, WebGLRenderer } from "three";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import { MathUtils, PerspectiveCamera, Scene, WebGLRenderer } from "three";
 import Bird from "./Bird";
 
 import "./style.css";
@@ -18,11 +17,13 @@ renderer.setSize(innerWidth, innerHeight);
     renderer.domElement
 );
 
-// initialize controls
-const controls = new OrbitControls(camera, renderer.domElement);
-
+// app state
 let birdIdx = 0;
 let activatedBirdCam = false;
+let mouseX = 0;
+let mouseY = 0;
+
+// create birds
 const birds: Bird[] = [];
 for (let i = 0; i < 2000; i++) {
     const bird = new Bird();
@@ -42,11 +43,39 @@ renderer.setAnimationLoop(() => {
         camera.position.set(bird.pos.x, bird.pos.y, bird.pos.z);
     }
 
-    controls.update();
+    // rotate camera
+    camera.rotation.y = MathUtils.lerp(
+        camera.rotation.y,
+        (-mouseX * Math.PI) / 10,
+        0.0001
+    );
+    camera.rotation.x = MathUtils.lerp(
+        camera.rotation.x,
+        (-mouseY * Math.PI) / 10,
+        0.0001
+    );
+
     renderer.render(scene, camera);
 });
 
-addEventListener("mousedown", () => {
-    activatedBirdCam = true;
-    birdIdx = (birdIdx + 1) % birds.length;
+addEventListener("mousemove", (e) => {
+    mouseX = e.clientX - innerWidth / 2;
+    mouseY = e.clientY - innerHeight / 2;
+});
+
+addEventListener("mousedown", (e) => {
+    // if mouse wheel pressed, toggle bird cam
+    if (e.button === 1) {
+        activatedBirdCam = !activatedBirdCam;
+    }
+
+    if (activatedBirdCam) {
+        // left mouse click will bring you back one
+        // right mouse click will bring your forward one
+        let dir = 0;
+        if (e.button === 0) dir = -1;
+        else if (e.button === 2) dir = 1;
+        birdIdx = (birdIdx + birds.length + dir) % birds.length;
+        console.log(birdIdx);
+    }
 });

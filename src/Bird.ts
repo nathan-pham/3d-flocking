@@ -5,6 +5,7 @@ import {
     MeshNormalMaterial,
     Vector3,
 } from "three";
+import { randomVector } from "./utils";
 
 const r = 0.25;
 const geometry = new ConeGeometry(r, r * 3, 10, 10, false, 0, Math.PI * 2);
@@ -13,14 +14,6 @@ const material = new MeshNormalMaterial();
 // https://stackoverflow.com/questions/54711098/three-js-lookat-function-not-working-correctly
 // correctly orient geometry
 geometry.applyMatrix4(new Matrix4().makeRotationX(Math.PI / 2));
-
-const random = (min: number, max: number) => Math.random() * (max - min) + min;
-const randomVector = (range: number = 1) =>
-    new Vector3(
-        random(-range, range),
-        random(-range, range),
-        random(-range, range)
-    );
 
 export default class Bird {
     mesh: Mesh;
@@ -35,6 +28,11 @@ export default class Bird {
         this.mesh = new Mesh(geometry, material);
     }
 
+    /**
+     * Filter out all the birds that are yourself or outside influence
+     * @param birds - Full array of birds
+     * @returns Filtered array of birds
+     */
     filterBirds(birds: Bird[]) {
         const influence = 5;
         return birds.filter(
@@ -43,6 +41,10 @@ export default class Bird {
         );
     }
 
+    /**
+     * Apply flocking forces to self
+     * @param birds - Full array of birds
+     */
     applyForces(birds: Bird[]) {
         birds = this.filterBirds(birds);
         if (birds.length > 0) {
@@ -52,6 +54,12 @@ export default class Bird {
         }
     }
 
+    /**
+     * Weird ass limit function (not accurate, doesn't use magnitude)
+     * @param vector - A vector
+     * @param n - Max component size
+     * @returns Copy of vector with limited components
+     */
     static limit(vector: Vector3, n: number) {
         vector = vector.clone();
         if (vector.x > n) vector.x = n;
@@ -61,6 +69,12 @@ export default class Bird {
         return vector;
     }
 
+    /**
+     * Set the magnitude of a vector
+     * @param vector - A vector
+     * @param n - New magnitude
+     * @returns Copy of vector with new magnitude
+     */
     static setMag(vector: Vector3, n: number) {
         return vector.clone().normalize().multiplyScalar(n);
     }
@@ -72,6 +86,11 @@ export default class Bird {
         );
     }
 
+    /**
+     * Keeps birds in line
+     * @param birds - Filtered list of birds
+     * @returns Force (added to acceleration)
+     */
     alignment(birds: Bird[]) {
         // average velocity
         const targetVel = birds
@@ -84,6 +103,11 @@ export default class Bird {
         return this.seek(targetVel);
     }
 
+    /**
+     * Keeps birds apart
+     * @param birds - Filtered list of birds
+     * @returns Force (added to acceleration)
+     */
     separation(birds: Bird[]) {
         // pointing away from self
         const targetVel = birds
@@ -102,6 +126,11 @@ export default class Bird {
         return this.seek(targetVel);
     }
 
+    /**
+     * Keeps birds together
+     * @param birds - Filtered list of birds
+     * @returns Force (added to acceleration)
+     */
     cohesion(birds: Bird[]) {
         // average position
         const avgPosition = birds
@@ -115,10 +144,15 @@ export default class Bird {
         return this.seek(targetVel);
     }
 
+    /**
+     * Update loop
+     */
     update() {
         this.vel.add(this.acc);
         this.pos.add(this.vel);
         this.acc.multiplyScalar(0);
+
+        // update mesh pos & rotation
         this.mesh.position.set(this.pos.x, this.pos.y, this.pos.z);
         this.mesh.lookAt(this.pos.clone().add(this.vel));
     }
