@@ -12,6 +12,7 @@
     "vite": "^2.9.15"
   },
   "dependencies": {
+    "@types/three": "^0.144.0",
     "three": "^0.145.0"
   }
 }
