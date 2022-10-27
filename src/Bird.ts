@@ -17,12 +17,12 @@ geometry.applyMatrix4(new Matrix4().makeRotationX(Math.PI / 2));
 
 export default class Bird {
     mesh: Mesh;
-    pos: Vector3 = randomVector(60);
+    pos: Vector3 = randomVector(55);
     vel: Vector3 = randomVector().divideScalar(20);
     acc: Vector3 = new Vector3(0, 0, 0);
 
     maxSpeed = 0.02;
-    maxForce = 0.01;
+    maxForce = 0.002;
 
     constructor() {
         this.mesh = new Mesh(geometry, material);
@@ -34,7 +34,7 @@ export default class Bird {
      * @returns Filtered array of birds
      */
     filterBirds(birds: Bird[]) {
-        const influence = 5;
+        const influence = 10;
         return birds.filter(
             (bird) =>
                 !(bird === this || this.pos.distanceTo(bird.pos) > influence)
@@ -61,10 +61,15 @@ export default class Bird {
      * @returns Copy of vector with limited components
      */
     static limit(vector: Vector3, n: number) {
-        vector = vector.clone();
-        if (vector.x > n) vector.x = n;
-        if (vector.y > n) vector.y = n;
-        if (vector.z > n) vector.z = n;
+        const mag = Math.sqrt(
+            Math.pow(vector.x, 2) +
+                Math.pow(vector.y, 2) +
+                Math.pow(vector.z, 2)
+        );
+
+        if (mag > n) {
+            return Bird.setMag(vector, n);
+        }
 
         return vector;
     }
@@ -148,6 +153,7 @@ export default class Bird {
      * Update loop
      */
     update() {
+        this.vel = Bird.setMag(this.vel, 0.1);
         this.vel.add(this.acc);
         this.pos.add(this.vel);
         this.acc.multiplyScalar(0);
